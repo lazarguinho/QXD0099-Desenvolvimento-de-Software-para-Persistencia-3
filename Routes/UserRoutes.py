@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from Config.config import db
 from Models.User import User
-from typing import List
-from bson import ObjectId
+
 
 user_router = APIRouter()
 

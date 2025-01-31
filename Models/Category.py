@@ -7,8 +7,3 @@ class Category(BaseModel):
 	description: str
 	status: str
 	category_level: int
-# id
-# nome
-# descricao
-# status
-# nivel_categoria
