@@ -1,0 +1,10 @@
+# ambiente virtual
+venv/
+
+# Arquivos de cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de ide
+.vscode/
