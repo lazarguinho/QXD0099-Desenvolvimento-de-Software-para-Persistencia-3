@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 
 class User(BaseModel):
-	id: Optional[int] = Field(None, alias='_id')
+	id: Optional[str] = Field(None, alias='_id')
 	name: str
 	email: str
 	password: str

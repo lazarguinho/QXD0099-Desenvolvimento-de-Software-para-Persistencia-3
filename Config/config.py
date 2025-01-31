@@ -1,4 +1,5 @@
-""" from motor.motor_asyncio import AsyncIOMotorClient
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
 
@@ -8,4 +9,4 @@ MONGO_URI = os.getenv("MONGO_URI")
 
 client = AsyncIOMotorClient(MONGO_URI)
 
-db = client["QXD_Ecommerce"] """
+db = client["QXD_Ecommerce"]
