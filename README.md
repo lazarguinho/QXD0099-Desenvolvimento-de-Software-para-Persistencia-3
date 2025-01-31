@@ -1,7 +1,7 @@
 # QXD0099-Desenvolvimento-de-Software-para-Persistencia-3
 
 
-```
+```mermaid
 erDiagram
     Usuario ||--|| Carrinho : possui
     Usuario ||--o{ Pedido : faz
