@@ -6,4 +6,4 @@ class Category(BaseModel):
 	name: str
 	description: str
 	status: str
-	category_level: int
+	category_level: str
