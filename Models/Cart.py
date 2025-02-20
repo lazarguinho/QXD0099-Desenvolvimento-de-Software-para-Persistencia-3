@@ -9,4 +9,5 @@ class Cart(BaseModel):
 	quantidade_items: int
 	status: str = Field(choices=['pendente', 'pago', 'enviado', 'entregue', 'cancelado'])
 	
+	user_id: str
 	produts: Optional[List[str]] = []

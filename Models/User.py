@@ -9,5 +9,5 @@ class User(BaseModel):
 	address: str
 	phoneNumber: str
 
-	carrinho_id: str 
+	carrinho_id: Optional[str] = Field(None, alias='carrinho_id')
 	pedidos: Optional[List[str]] = []

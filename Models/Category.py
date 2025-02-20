@@ -8,4 +8,4 @@ class Category(BaseModel):
 	status: str
 	category_level: str
 
-	products: List[str]
+	products: Optional[List[str]] = []
