@@ -13,6 +13,9 @@ async def get_products(skip: int = 0, limit: int = 10):
     for product in products:
         product['_id'] = str(product['_id'])
 
+        if "carts" in product and isinstance(product["carts"], list):
+            product["carts"] = [str(cart_id) if isinstance(cart_id, ObjectId) else cart_id for cart_id in product["carts"]]
+
     return products
 
 @product_router.get("/{product_id}", response_model=Product)
@@ -25,6 +28,9 @@ async def get_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found")
 
     product['_id'] = str(product['_id'])
+
+    if "carts" in product and isinstance(product["carts"], list):
+        product["carts"] = [str(cart_id) if isinstance(cart_id, ObjectId) else cart_id for cart_id in product["carts"]]
 
     return product
 
@@ -80,4 +86,14 @@ async def delete_product(product_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Delete failed")
 
+    await db.carts.update_many(
+        {"products": product_object_id},
+        {"$pull": {"products": product_object_id}}
+    )
+
     return {"message": "Product deleted successfully"}
+
+@product_router.get("/count")
+async def get_product_count():    
+    count = await db.products.count_documents({})
+    return {"total_products": count}

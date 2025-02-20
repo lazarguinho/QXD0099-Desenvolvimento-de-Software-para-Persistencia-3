@@ -81,3 +81,8 @@ async def delete_order(order_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
     
     return {"message": "Order deleted successfully"}
+
+@order_router.get("/count")
+async def get_order_count():
+    count = await db.orders.count_documents({})
+    return {"total_orders": count}

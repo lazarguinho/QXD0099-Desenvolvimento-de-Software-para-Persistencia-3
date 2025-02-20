@@ -12,6 +12,8 @@ async def get_users(skip: int = 0, limit: int = 10):
 
     for user in users:
         user['_id'] = str(user['_id'])
+        if "carrinho_id" in user and user["carrinho_id"]:
+            user["carrinho_id"] = str(user["carrinho_id"])
 
     return users
 
@@ -26,6 +28,9 @@ async def get_user(user_id: str):
 
     user['_id'] = str(user['_id'])
 
+    if "carrinho_id" in user and user["carrinho_id"]:
+        user["carrinho_id"] = str(user["carrinho_id"])
+
     return user
 
 @user_router.post("/", response_model=User)
@@ -39,6 +44,9 @@ async def create_user(user: User):
         raise HTTPException(status_code=400, detail="Erro ao criar usuário")
 
     created_user['_id'] = str(created_user['_id'])
+
+    if "carrinho_id" in created_user and created_user["carrinho_id"]:
+        created_user["carrinho_id"] = str(created_user["carrinho_id"])
 
     return created_user
 
@@ -61,6 +69,9 @@ async def update_user(user_id: str, user: User):
 
     updated_user['_id'] = str(updated_user['_id'])
 
+    if "carrinho_id" in updated_user and updated_user["carrinho_id"]:
+        updated_user["carrinho_id"] = str(updated_user["carrinho_id"])
+
     return updated_user
 
 @user_router.delete("/{user_id}")
@@ -81,3 +92,8 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "User deleted successfully"}
+
+@user_router.get("/count")
+async def get_user_count():
+    count = await db.users.count_documents({})
+    return {"total_users": count}

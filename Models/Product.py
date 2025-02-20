@@ -9,3 +9,4 @@ class Product(BaseModel):
     stock_quantity: int
     
     category_id: str
+    carts: Optional[List[str]] = []

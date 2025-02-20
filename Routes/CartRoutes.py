@@ -13,6 +13,9 @@ async def get_carts(skip: int = 0, limit: int = 10):
     for cart in carts:
         cart['_id'] = str(cart['_id'])
 
+        if "produts" in cart and isinstance(cart["products"], list):
+            cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
+
     return carts
 
 @cart_router.get("/{cart_id}", response_model=Cart)
@@ -25,6 +28,9 @@ async def get_cart(cart_id: str):
         raise HTTPException(status_code=404, detail="Cart not found")
 
     cart['_id'] = str(cart['_id'])
+
+    if "produts" in cart and isinstance(cart["products"], list):
+        cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
 
     return cart
 
@@ -80,5 +86,64 @@ async def delete_cart(cart_id: str):
 
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Delete failed")
+    
+    await db.products.update_many(
+        {"carts": cart_object_id},
+        {"$pull": {"carts": cart_object_id}}
+    )
+
+    await db.users.update_one(
+        {"carrinho_id": cart_object_id},
+        {"$unset": {"carrinho_id": ""}}
+    )
 
     return {"message": "Cart deleted successfully"}
+
+@cart_router.get("/user/{user_id}", response_model=List[Cart])
+async def get_carts_by_user(user_id: str):
+    filt = {"user_id": user_id}
+
+    carts = await db.carts.find(filt).to_list(100)
+
+    for cart in carts:
+        cart['_id'] = str(cart['_id'])
+
+        if "produts" in cart and isinstance(cart["products"], list):
+            cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
+
+    return carts
+
+@cart_router.put("/user/{user_id}", response_model=List[Cart])
+async def link_user_to_cart(user_id: str, cart_id: str):
+    filt = {"_id": ObjectId(cart_id)} if ObjectId.is_valid(cart_id) else {"_id": cart_id}
+
+    cart = await db.carts.find_one(filt)
+
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    cart['_id'] = str(cart['_id'])
+
+    if "produts" in cart and isinstance(cart["products"], list):
+        cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
+
+    result = await db.carts.update_one({"_id": ObjectId(cart_id)}, {"$set": {"user_id": user_id}})
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    return await get_carts_by_user(user_id)
+
+@cart_router.delete("/user/{user_id}")
+async def unlink_user_cart(user_id: str):
+    result = await db.carts.update_many({"user_id": user_id}, {"$unset": {"user_id": ""}})
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    return {"message": "User cart unlinked successfully"}
+
+@cart_router.get("/count")
+async def get_cart_count():
+    count = await db.carts.count_documents({})
+    return {"total_carts": count}

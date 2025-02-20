@@ -83,3 +83,8 @@ async def delete_category(category_id: str):
 		raise HTTPException(status_code=404, detail="Delete failed")
 
 	return {"message": "Category deleted successfully"}	
+
+@category_router.get("/count")
+async def get_category_count():
+	count = await db.categories.count_documents({})
+	return {"total_categories": count}
