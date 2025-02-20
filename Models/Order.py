@@ -11,4 +11,5 @@ class Order(BaseModel):
 	delivery_price: float
 
 	user_id: str
-	items: List[str]
+	products: List[str]
+	reviews: List[str]

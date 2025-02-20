@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
 
@@ -11,5 +11,4 @@ class Review(BaseModel):
     titulo: str
     status: str = Field(choices=["pendente", "aprovado", "rejeitado"])
 
-    user_id: str
-    product_id: str
+    order_id: str

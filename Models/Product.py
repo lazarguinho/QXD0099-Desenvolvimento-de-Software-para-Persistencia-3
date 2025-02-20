@@ -10,3 +10,4 @@ class Product(BaseModel):
     
     category_id: str
     carts: Optional[List[str]] = []
+    orders: Optional[List[str]] = []
