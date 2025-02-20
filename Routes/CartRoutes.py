@@ -37,17 +37,33 @@ async def get_cart(cart_id: str):
 @cart_router.post("/", response_model=Cart)
 async def create_cart(cart: Cart):
     cart_dict = cart.model_dump(by_alias=True, exclude={'id'})
-    
-    new_cart = await db.carts.insert_one(cart_dict)
 
+    new_cart = await db.carts.insert_one(cart_dict)
     created_cart = await db.carts.find_one({"_id": new_cart.inserted_id})
 
     if not created_cart:
         raise HTTPException(status_code=400, detail="Erro ao criar carrinho")
 
-    created_cart['_id'] = str(created_cart['_id'])
+    cart_id_str = str(created_cart['_id'])
+
+    # Se houver um usuário associado, atualizar o ID do carrinho na coleção de usuários
+    if "user_id" in cart_dict and cart_dict["user_id"]:
+        await db.users.update_one(
+            {"_id": ObjectId(cart_dict["user_id"])},
+            {"$set": {"carrinho_id": cart_id_str}}
+        )
+
+    # Se houver produtos no carrinho, adicionar o ID do carrinho à lista de carrinhos de cada produto
+    if "products" in cart_dict and isinstance(cart_dict["products"], list):
+        await db.products.update_many(
+            {"_id": {"$in": [ObjectId(product_id) for product_id in cart_dict["products"]]}},
+            {"$addToSet": {"carts": cart_id_str}}
+        )
+
+    created_cart['_id'] = cart_id_str
 
     return created_cart
+
 
 @cart_router.put("/{cart_id}", response_model=Cart)
 async def update_cart(cart_id: str, cart: Cart):
@@ -66,9 +82,26 @@ async def update_cart(cart_id: str, cart: Cart):
     if not updated_cart:
         raise HTTPException(status_code=400, detail="Erro ao atualizar carrinho")
 
-    updated_cart['_id'] = str(updated_cart['_id'])
+    cart_id_str = str(updated_cart['_id'])
+
+    # Se houver um usuário associado, atualizar o ID do carrinho na coleção de usuários
+    if "user_id" in cart_dict and cart_dict["user_id"]:
+        await db.users.update_one(
+            {"_id": ObjectId(cart_dict["user_id"])},
+            {"$set": {"carrinho_id": cart_id_str}}
+        )
+
+    # Se houver produtos no carrinho, adicionar o ID do carrinho à lista de carrinhos de cada produto
+    if "products" in cart_dict and isinstance(cart_dict["products"], list):
+        await db.products.update_many(
+            {"_id": {"$in": [ObjectId(product_id) for product_id in cart_dict["products"]]}},
+            {"$addToSet": {"carts": cart_id_str}}
+        )
+
+    updated_cart['_id'] = cart_id_str
 
     return updated_cart
+
 
 @cart_router.delete("/{cart_id}")
 async def delete_cart(cart_id: str):
