@@ -39,6 +39,24 @@ async def create_order(order: Order):
         raise HTTPException(status_code=400, detail="Erro ao criar pedido")
     
     created_order['_id'] = str(created_order['_id'])
+
+    if "products" in order_dict and isinstance(order_dict["products"], list):
+        await db.products.update_many(
+            {"_id": {"$in": [ObjectId(product_id) for product_id in order_dict["products"]]}},
+            {"$addToSet": {"orders": created_order['_id']}}
+        )
+
+    if "user_id" in order_dict and order_dict["user_id"]:
+        await db.users.update_one(
+            {"_id": ObjectId(order_dict["user_id"])},
+            {"$addToSet": {"pedidos": created_order['_id']}}
+        )
+
+    if "reviews" in order_dict and isinstance(order_dict["reviews"], list):
+        await db.reviews.update_many(
+            {"_id": {"$in": [ObjectId(review_id) for review_id in order_dict["reviews"]]}},
+            {"$set": {"order_id": created_order['_id']}}
+        )
     
     return created_order
 
@@ -59,7 +77,27 @@ async def update_order(order_id: str, order: Order):
     if not updated_order:
         raise HTTPException(status_code=400, detail="Erro ao atualizar pedido")
     
-    updated_order['_id'] = str(updated_order['_id'])
+    order_id_str = str(updated_order['_id'])
+
+    if "products" in order_dict and isinstance(order_dict["products"], list):
+        await db.products.update_many(
+            {"_id": {"$in": [ObjectId(product_id) for product_id in order_dict["products"]]}},
+            {"$addToSet": {"orders": order_id_str}}
+        )
+
+    if "user_id" in order_dict and order_dict["user_id"]:
+        await db.users.update_one(
+            {"_id": ObjectId(order_dict["user_id"])},
+            {"$addToSet": {"pedidos": order_id_str}}
+        )
+
+    if "reviews" in order_dict and isinstance(order_dict["reviews"], list):
+        await db.reviews.update_many(
+            {"_id": {"$in": [ObjectId(review_id) for review_id in order_dict["reviews"]]}},
+            {"$set": {"order_id": order_id_str}}
+        )
+    
+    updated_order['_id'] = order_id_str
     
     return updated_order
 
@@ -79,6 +117,21 @@ async def delete_order(order_id: str):
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Delete failed")
+    
+    await db.products.update_many(
+        {"orders": order_id},
+        {"$pull": {"orders": order_id}}
+    )
+    
+    await db.users.update_many(
+        {"pedidos": order_id},
+        {"$pull": {"pedidos": order_id}}
+    )
+    
+    await db.reviews.update_many(
+        {"order_id": order_id},
+        {"$unset": {"order_id": ""}}
+    )
     
     return {"message": "Order deleted successfully"}
 

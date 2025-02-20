@@ -43,8 +43,31 @@ async def create_product(product: Product):
 
     if not created_product:
         raise HTTPException(status_code=400, detail="Erro ao criar produto")
+    
+    product_id_str = str(created_product['_id'])
 
-    created_product['_id'] = str(created_product['_id'])
+    # Se houver carrinhos associados, adicionar o ID do produto à lista de produtos de cada carrinho
+    if "carts" in product_dict and isinstance(product_dict["carts"], list):
+        await db.carts.update_many(
+            {"_id": {"$in": [ObjectId(cart_id) for cart_id in product_dict["carts"]]}},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    # Se houver pedidos associado, adicionar o ID do produto à lista de produtos de cada pedido
+    if "orders" in product_dict and isinstance(product_dict["orders"], list):
+        await db.orders.update_many(
+            {"_id": {"$in": [ObjectId(order_id) for order_id in product_dict["orders"]]}},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    # Se houver uma categoria associada, adicionar o ID da categoria à lista de categorias de cada produto
+    if "category_id" in product_dict and product_dict["category_id"]:
+        await db.categories.update_one(
+            {"_id": ObjectId(product_dict["category_id"])},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    created_product['_id'] = product_id_str
 
     return created_product
 
@@ -65,7 +88,29 @@ async def update_product(product_id: str, product: Product):
     if not updated_product:
         raise HTTPException(status_code=400, detail="Erro ao atualizar produto")
 
-    updated_product['_id'] = str(updated_product['_id'])
+    product_id_str = str(updated_product['_id'])
+
+    if "carts" in product_dict and isinstance(product_dict["carts"], list):
+        await db.carts.update_many(
+            {"_id": {"$in": [ObjectId(cart_id) for cart_id in product_dict["carts"]]}},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    if "orders" in product_dict and isinstance(product_dict["orders"], list):
+        await db.orders.update_many(
+            {"_id": {"$in": [ObjectId(order_id) for order_id in product_dict["orders"]]}},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    if "category_id" in product_dict and product_dict["category_id"]:
+        await db.categories.update_one(
+            {"_id": ObjectId(product_dict["category_id"])},
+            {"$addToSet": {"products": product_id_str}}
+        )
+
+    updated_product['_id'] = product_id_str
+
+    
 
     return updated_product
 
@@ -87,6 +132,16 @@ async def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     await db.carts.update_many(
+        {"products": product_object_id},
+        {"$pull": {"products": product_object_id}}
+    )
+
+    await db.orders.update_many(
+        {"products": product_object_id},
+        {"$pull": {"products": product_object_id}}
+    )
+
+    await db.categories.update_many(
         {"products": product_object_id},
         {"$pull": {"products": product_object_id}}
     )

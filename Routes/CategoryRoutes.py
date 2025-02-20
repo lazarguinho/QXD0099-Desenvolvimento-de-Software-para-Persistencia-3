@@ -31,18 +31,27 @@ async def get_category(category_id: str):
 
 @category_router.post("/", response_model=Category)
 async def create_category(category: Category):
-	category_dict = category.model_dump(by_alias=True, exclude={'id'})
+    category_dict = category.model_dump(by_alias=True, exclude={'id'})
 
-	new_category = await db.categories.insert_one(category_dict)	
-	
-	created_category = await db.categories.find_one({"_id": new_category.inserted_id})
+    new_category = await db.categories.insert_one(category_dict)    
+    created_category = await db.categories.find_one({"_id": new_category.inserted_id})
 
-	if not created_category:
-		raise HTTPException(status_code=400, detail="Erro ao criar usuário")
+    if not created_category:
+        raise HTTPException(status_code=400, detail="Erro ao criar categoria")
 
-	created_category['_id'] = str(created_category['_id'])
+    category_id_str = str(created_category['_id'])
 
-	return created_category
+    # Se houver produtos associados, adicionar o ID da categoria à lista de categorias de cada produto
+    if "products" in category_dict and isinstance(category_dict["products"], list):
+        await db.products.update_many(
+            {"_id": {"$in": [ObjectId(product_id) for product_id in category_dict["products"]]}},
+            {"$set": {"category_id": category_id_str}}
+        )
+
+    created_category['_id'] = category_id_str
+
+    return created_category
+
 
 @category_router.put("/{category_id}", response_model=Category)
 async def update_category(category_id: str, category: Category):
@@ -60,6 +69,12 @@ async def update_category(category_id: str, category: Category):
 
 	if not updated_category:
 		raise HTTPException(status_code=400, detail="Erro ao atualizar categoria")
+	
+	if "products" in category_dict and isinstance(category_dict["products"], list):
+		await db.products.update_many(
+			{"_id": {"$in": [ObjectId(product_id) for product_id in category_dict["products"]]}},
+			{"$set": {"category_id": category_id}}
+		)
 
 	updated_category['_id'] = str(updated_category['_id'])
 
@@ -81,6 +96,11 @@ async def delete_category(category_id: str):
 
 	if result.deleted_count == 0:
 		raise HTTPException(status_code=404, detail="Delete failed")
+	
+	await db.products.update_many(
+		{"category_id": category_id},
+		{"$unset": {"category_id": ""}}
+	)
 
 	return {"message": "Category deleted successfully"}	
 
