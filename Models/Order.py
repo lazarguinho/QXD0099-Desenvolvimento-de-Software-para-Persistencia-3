@@ -12,4 +12,4 @@ class Order(BaseModel):
 
 	user_id: str
 	products: List[str]
-	reviews: List[str]
+	reviews: Optional[List[str]] = []

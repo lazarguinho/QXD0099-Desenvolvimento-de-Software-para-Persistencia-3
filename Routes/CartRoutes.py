@@ -13,7 +13,7 @@ async def get_carts(skip: int = 0, limit: int = 10):
     for cart in carts:
         cart['_id'] = str(cart['_id'])
 
-        if "produts" in cart and isinstance(cart["products"], list):
+        if "products" in cart and isinstance(cart["products"], list):
             cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
 
     return carts
@@ -29,7 +29,7 @@ async def get_cart(cart_id: str):
 
     cart['_id'] = str(cart['_id'])
 
-    if "produts" in cart and isinstance(cart["products"], list):
+    if "products" in cart and isinstance(cart["products"], list):
         cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
 
     return cart
@@ -55,6 +55,7 @@ async def create_cart(cart: Cart):
 
     # Se houver produtos no carrinho, adicionar o ID do carrinho à lista de carrinhos de cada produto
     if "products" in cart_dict and isinstance(cart_dict["products"], list):
+        print(cart_dict["products"])
         await db.products.update_many(
             {"_id": {"$in": [ObjectId(product_id) for product_id in cart_dict["products"]]}},
             {"$addToSet": {"carts": cart_id_str}}
@@ -121,12 +122,12 @@ async def delete_cart(cart_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
     
     await db.products.update_many(
-        {"carts": cart_object_id},
-        {"$pull": {"carts": cart_object_id}}
+        {"carts": str(cart_object_id)},
+        {"$pull": {"carts": str(cart_object_id)}}
     )
 
     await db.users.update_one(
-        {"carrinho_id": cart_object_id},
+        {"carrinho_id": str(cart_object_id)},
         {"$unset": {"carrinho_id": ""}}
     )
 
@@ -141,7 +142,7 @@ async def get_carts_by_user(user_id: str):
     for cart in carts:
         cart['_id'] = str(cart['_id'])
 
-        if "produts" in cart and isinstance(cart["products"], list):
+        if "products" in cart and isinstance(cart["products"], list):
             cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
 
     return carts
@@ -157,7 +158,7 @@ async def link_user_to_cart(user_id: str, cart_id: str):
 
     cart['_id'] = str(cart['_id'])
 
-    if "produts" in cart and isinstance(cart["products"], list):
+    if "products" in cart and isinstance(cart["products"], list):
         cart["products"] = [str(product_id) if isinstance(product_id, ObjectId) else product_id for product_id in cart["products"]]
 
     result = await db.carts.update_one({"_id": ObjectId(cart_id)}, {"$set": {"user_id": user_id}})

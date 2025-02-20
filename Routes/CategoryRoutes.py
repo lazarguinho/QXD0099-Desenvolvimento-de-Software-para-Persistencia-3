@@ -98,7 +98,7 @@ async def delete_category(category_id: str):
 		raise HTTPException(status_code=404, detail="Delete failed")
 	
 	await db.products.update_many(
-		{"category_id": category_id},
+		{"category_id": str(category_id)},
 		{"$unset": {"category_id": ""}}
 	)
 

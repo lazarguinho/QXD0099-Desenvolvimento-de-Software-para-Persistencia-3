@@ -132,18 +132,19 @@ async def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     await db.carts.update_many(
-        {"products": product_object_id},
-        {"$pull": {"products": product_object_id}}
+        {"products": str(product_object_id)},
+        {"$pull": {"products": str(product_object_id)}}
     )
 
     await db.orders.update_many(
-        {"products": product_object_id},
-        {"$pull": {"products": product_object_id}}
+        {"products": str(product_object_id)},
+        {"$pull": {"products": str(product_object_id)}}
     )
 
+
     await db.categories.update_many(
-        {"products": product_object_id},
-        {"$pull": {"products": product_object_id}}
+        {"products": str(product_object_id)},
+        {"$pull": {"products": str(product_object_id)}}
     )
 
     return {"message": "Product deleted successfully"}

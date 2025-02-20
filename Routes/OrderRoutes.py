@@ -119,17 +119,17 @@ async def delete_order(order_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
     
     await db.products.update_many(
-        {"orders": order_id},
-        {"$pull": {"orders": order_id}}
+        {"orders": str(order_id)},
+        {"$pull": {"orders": str(order_id)}}
     )
     
     await db.users.update_many(
-        {"pedidos": order_id},
-        {"$pull": {"pedidos": order_id}}
+        {"pedidos": str(order_id)},
+        {"$pull": {"pedidos": str(order_id)}}
     )
     
     await db.reviews.update_many(
-        {"order_id": order_id},
+        {"order_id": str(order_id)},
         {"$unset": {"order_id": ""}}
     )
     
