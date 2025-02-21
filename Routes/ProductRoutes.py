@@ -164,3 +164,18 @@ async def delete_product(product_id: str):
 
     return {"message": "Product deleted successfully"}
 
+
+@product_router.get("/search/", response_model=List[Product])
+async def search_products(query: str):
+    regex_pattern = {"$regex": query, "$options": "i"}
+    products = await db.products.find({
+        "$or": [
+            {"name": regex_pattern},
+        ]
+    }).to_list(100)
+    
+    for product in products:
+        product['_id'] = str(product['_id'])
+        if "carts" in product and isinstance(product["carts"], list):
+            product["carts"] = [str(cart_id) if isinstance(cart_id, ObjectId) else cart_id for cart_id in product["carts"]]
+    return products
