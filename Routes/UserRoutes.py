@@ -138,3 +138,15 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "User deleted successfully"}
+
+@user_router.get("/search/", response_model=List[User])
+async def search_users(query: str):
+    regex_pattern = {"$regex": query, "$options": "i"}  
+    users = await db.users.find({"$or": [{"name": regex_pattern}, {"email": regex_pattern}]}).to_list(100)
+
+    for user in users:
+        user['_id'] = str(user['_id'])
+        if "carrinho_id" in user and user["carrinho_id"]:
+            user["carrinho_id"] = str(user["carrinho_id"])
+
+    return users

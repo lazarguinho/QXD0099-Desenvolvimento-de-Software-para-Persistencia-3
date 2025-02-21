@@ -107,3 +107,16 @@ async def delete_category(category_id: str):
 	)
 
 	return {"message": "Category deleted successfully"}	
+
+@category_router.get("/search/", response_model=List[Category])
+async def search_categories(query: str):
+    regex_pattern = {"$regex": query, "$options": "i"}
+    categories = await db.categories.find({
+        "$or": [
+            {"name": regex_pattern},
+        ]
+    }).to_list(100)
+    
+    for category in categories:
+        category['_id'] = str(category['_id'])
+    return categories
