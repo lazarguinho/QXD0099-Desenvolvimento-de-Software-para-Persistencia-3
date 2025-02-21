@@ -6,6 +6,11 @@ from bson import ObjectId
 
 cart_router = APIRouter()
 
+@cart_router.get("/count")
+async def get_cart_count():
+    count = await db.carts.count_documents({})
+    return {"total_carts": count}
+
 @cart_router.get("/", response_model=List[Cart])
 async def get_carts(skip: int = 0, limit: int = 10):
     carts = await db.carts.find().skip(skip).limit(limit).to_list(100)
@@ -176,8 +181,3 @@ async def unlink_user_cart(user_id: str):
         raise HTTPException(status_code=404, detail="Cart not found")
 
     return {"message": "User cart unlinked successfully"}
-
-@cart_router.get("/count")
-async def get_cart_count():
-    count = await db.carts.count_documents({})
-    return {"total_carts": count}

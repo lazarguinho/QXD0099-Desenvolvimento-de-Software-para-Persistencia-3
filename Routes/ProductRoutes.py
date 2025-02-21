@@ -6,6 +6,11 @@ from bson import ObjectId
 
 product_router = APIRouter()
 
+@product_router.get("/count")
+async def get_product_count():    
+    count = await db.products.count_documents({})
+    return {"total_products": count}
+
 @product_router.get("/", response_model=List[Product])
 async def get_products(skip: int = 0, limit: int = 10, min_price: float = None, max_price: float = None):
     """ Retorna produtos com opção de filtrar por intervalo de preço """
@@ -159,7 +164,3 @@ async def delete_product(product_id: str):
 
     return {"message": "Product deleted successfully"}
 
-@product_router.get("/count")
-async def get_product_count():    
-    count = await db.products.count_documents({})
-    return {"total_products": count}

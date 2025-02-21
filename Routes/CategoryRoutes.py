@@ -6,6 +6,10 @@ from bson import ObjectId
 
 category_router = APIRouter()
 
+@category_router.get("/count")
+async def get_category_count():
+	count = await db.categories.count_documents({})
+	return {"total_categories": count}
 
 @category_router.get("/", response_model=List[Category])
 async def get_categories(skip: int = 0, limit: int = 10):
@@ -103,8 +107,3 @@ async def delete_category(category_id: str):
 	)
 
 	return {"message": "Category deleted successfully"}	
-
-@category_router.get("/count")
-async def get_category_count():
-	count = await db.categories.count_documents({})
-	return {"total_categories": count}

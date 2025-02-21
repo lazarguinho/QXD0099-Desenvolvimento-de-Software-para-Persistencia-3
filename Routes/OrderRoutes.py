@@ -6,6 +6,23 @@ from bson import ObjectId
 
 order_router = APIRouter()
 
+@order_router.get("/summary")
+async def get_order_summary():
+    """ Retorna um resumo das vendas agrupadas por método de pagamento """
+    pipeline = [
+        {"$group": {"_id": "$payment_method", "total_vendas": {"$sum": "$total"}, "quantidade_pedidos": {"$sum": 1}}}
+    ]
+
+    summary = await db.orders.aggregate(pipeline).to_list(None)
+
+    return {"summary": summary}
+
+
+@order_router.get("/count")
+async def get_order_count():
+    count = await db.orders.count_documents({})
+    return {"total_orders": count}
+
 @order_router.get("/", response_model=List[Order])
 async def get_orders(skip: int = 0, limit: int = 10):
     orders = await db.orders.find().skip(skip).limit(limit).to_list(100)
@@ -134,8 +151,3 @@ async def delete_order(order_id: str):
     )
     
     return {"message": "Order deleted successfully"}
-
-@order_router.get("/count")
-async def get_order_count():
-    count = await db.orders.count_documents({})
-    return {"total_orders": count}

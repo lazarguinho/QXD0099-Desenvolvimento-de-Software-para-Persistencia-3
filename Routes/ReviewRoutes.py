@@ -9,6 +9,11 @@ review_router = APIRouter()
 from datetime import datetime
 from fastapi import Query
 
+@review_router.get("/count")
+async def get_review_count():
+    count = await db.reviews.count_documents({})
+    return {"total_reviews": count}
+
 @review_router.get("/", response_model=List[Review])
 async def get_reviews(
     skip: int = 0, 
@@ -108,8 +113,3 @@ async def delete_review(review_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "Review deleted successfully"}
-
-@review_router.get("/count")
-async def get_review_count():
-    count = await db.reviews.count_documents({})
-    return {"total_reviews": count}

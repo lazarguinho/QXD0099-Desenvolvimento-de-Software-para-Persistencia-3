@@ -6,6 +6,11 @@ from bson import ObjectId
 
 user_router = APIRouter()
 
+@user_router.get("/count")
+async def get_user_count():
+    count = await db.users.count_documents({})
+    return {"total_users": count}
+
 @user_router.get("/", response_model=List[User])
 async def get_users(skip: int = 0, limit: int = 10):
     users = await db.users.find().skip(skip).limit(limit).to_list(100)
@@ -92,8 +97,3 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "User deleted successfully"}
-
-@user_router.get("/count")
-async def get_user_count():
-    count = await db.users.count_documents({})
-    return {"total_users": count}
