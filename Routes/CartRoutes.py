@@ -11,6 +11,18 @@ async def get_cart_count():
     count = await db.carts.count_documents({})
     return {"total_carts": count}
 
+@cart_router.get("/sorted")
+async def get_sorted_carts(order: str = "desc", limit: int = 10):
+    sort_order = -1 if order == "desc" else 1  # Descendente (-1) ou Ascendente (1)
+
+    carts = await db.carts.find().sort("subtotal", sort_order).limit(limit).to_list(100)
+
+    for cart in carts:
+        cart['_id'] = str(cart['_id'])
+
+    return carts
+
+
 @cart_router.get("/", response_model=List[Cart])
 async def get_carts(skip: int = 0, limit: int = 10):
     carts = await db.carts.find().skip(skip).limit(limit).to_list(100)
