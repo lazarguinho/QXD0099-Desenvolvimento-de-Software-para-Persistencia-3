@@ -7,16 +7,26 @@ from bson import ObjectId
 product_router = APIRouter()
 
 @product_router.get("/", response_model=List[Product])
-async def get_products(skip: int = 0, limit: int = 10):
-    products = await db.products.find().skip(skip).limit(limit).to_list(100)
+async def get_products(skip: int = 0, limit: int = 10, min_price: float = None, max_price: float = None):
+    """ Retorna produtos com opção de filtrar por intervalo de preço """
+    query = {}
+
+    if min_price is not None and max_price is not None:
+        query["price"] = {"$gte": min_price, "$lte": max_price}
+    elif min_price is not None:
+        query["price"] = {"$gte": min_price}
+    elif max_price is not None:
+        query["price"] = {"$lte": max_price}
+
+    products = await db.products.find(query).skip(skip).limit(limit).to_list(100)
 
     for product in products:
         product['_id'] = str(product['_id'])
-
         if "carts" in product and isinstance(product["carts"], list):
             product["carts"] = [str(cart_id) if isinstance(cart_id, ObjectId) else cart_id for cart_id in product["carts"]]
 
     return products
+
 
 @product_router.get("/{product_id}", response_model=Product)
 async def get_product(product_id: str):
