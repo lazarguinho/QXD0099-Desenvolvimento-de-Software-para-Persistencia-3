@@ -6,14 +6,46 @@ from bson import ObjectId
 
 review_router = APIRouter()
 
+from datetime import datetime
+from fastapi import Query
+
+@review_router.get("/count")
+async def get_review_count():
+    count = await db.reviews.count_documents({})
+    return {"total_reviews": count}
+
 @review_router.get("/", response_model=List[Review])
-async def get_reviews(skip: int = 0, limit: int = 10):
-    reviews = await db.reviews.find().skip(skip).limit(limit).to_list(100)
+async def get_reviews(
+    skip: int = 0, 
+    limit: int = 10, 
+    year: int = Query(None, description="Filtrar avaliações por ano"),
+    start_date: str = Query(None, description="Filtrar avaliações a partir de uma data (YYYY-MM-DD)"),
+    end_date: str = Query(None, description="Filtrar avaliações até uma data (YYYY-MM-DD)")
+):
+    query = {}
+
+    # Filtrar por ano (extrai avaliações dentro do ano específico)
+    if year:
+        start = datetime(year, 1, 1)
+        end = datetime(year, 12, 31, 23, 59, 59)
+        query["data"] = {"$gte": start, "$lte": end}
+
+    # Filtrar por intervalo de datas (separado do filtro de ano)
+    if start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            query["data"] = {"$gte": start, "$lte": end}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD.")
+    
+    reviews = await db.reviews.find(query).skip(skip).limit(limit).to_list(100)
 
     for review in reviews:
         review['_id'] = str(review['_id'])
 
     return reviews
+
 
 @review_router.get("/{review_id}", response_model=Review)
 async def get_review(review_id: str):
@@ -81,8 +113,3 @@ async def delete_review(review_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "Review deleted successfully"}
-
-@review_router.get("/count")
-async def get_review_count():
-    count = await db.reviews.count_documents({})
-    return {"total_reviews": count}

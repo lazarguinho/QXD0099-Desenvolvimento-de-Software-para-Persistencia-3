@@ -6,6 +6,11 @@ from bson import ObjectId
 
 user_router = APIRouter()
 
+@user_router.get("/count")
+async def get_user_count():
+    count = await db.users.count_documents({})
+    return {"total_users": count}
+
 @user_router.get("/", response_model=List[User])
 async def get_users(skip: int = 0, limit: int = 10):
     users = await db.users.find().skip(skip).limit(limit).to_list(100)
@@ -32,6 +37,47 @@ async def get_user(user_id: str):
         user["carrinho_id"] = str(user["carrinho_id"])
 
     return user
+
+@user_router.get("/details/{user_id}")
+async def get_user_details(user_id: str):
+    """ Retorna detalhes do usuário, incluindo carrinho, pedidos e produtos dentro do carrinho """
+    
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user['_id'] = str(user['_id'])
+
+    # Buscar detalhes do carrinho
+    cart = None
+    products_in_cart = []
+    if "carrinho_id" in user and user["carrinho_id"]:
+        cart = await db.carts.find_one({"_id": ObjectId(user["carrinho_id"])})
+        
+        if cart:
+            cart['_id'] = str(cart['_id'])
+            if "products" in cart and isinstance(cart["products"], list):
+                product_ids = [ObjectId(p_id) for p_id in cart["products"]]
+                products_in_cart = await db.products.find({"_id": {"$in": product_ids}}).to_list(100)
+                for product in products_in_cart:
+                    product['_id'] = str(product['_id'])
+
+    # Buscar pedidos do usuário
+    orders = await db.orders.find({"user_id": user_id}).to_list(100)
+    for order in orders:
+        order['_id'] = str(order['_id'])
+
+    return {
+        "user": user,
+        "cart": cart,
+        "products_in_cart": products_in_cart,
+        "orders": orders
+    }
+
 
 @user_router.post("/", response_model=User)
 async def create_user(user: User):
@@ -92,8 +138,3 @@ async def delete_user(user_id: str):
         raise HTTPException(status_code=404, detail="Delete failed")
 
     return {"message": "User deleted successfully"}
-
-@user_router.get("/count")
-async def get_user_count():
-    count = await db.users.count_documents({})
-    return {"total_users": count}
